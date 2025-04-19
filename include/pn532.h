@@ -18,6 +18,12 @@
 #include "driver/gpio.h"
 #include "pn532_driver.h"
 
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #define PN532_PREAMBLE                      (0x00)
 #define PN532_STARTCODE1                    (0x00)
 #define PN532_STARTCODE2                    (0xFF)
@@ -234,5 +240,9 @@ esp_err_t ntag2xx_read_page(pn532_io_handle_t io_handle, uint8_t page, uint8_t *
  * @return ESP_OK if successful
  */
 esp_err_t ntag2xx_write_page(pn532_io_handle_t io_handle, uint8_t page, const uint8_t *data);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

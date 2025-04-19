@@ -6,6 +6,10 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 struct pn532_io_t;
 typedef struct pn532_io_t pn532_io_t;
 typedef struct pn532_io_t * pn532_io_handle_t;
@@ -121,5 +125,9 @@ esp_err_t pn532_send_command_wait_ack(pn532_io_handle_t io_handle, const uint8_t
  * @return ESP_OK if successful
  */
 esp_err_t pn532_read_ack(pn532_io_handle_t io_handle);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //PN532_DRIVER_H

@@ -6,6 +6,10 @@
 
 #include "pn532_driver.h"
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 esp_err_t pn532_new_driver_hsu(gpio_num_t uart_rx,
                                gpio_num_t uart_tx,
@@ -15,4 +19,8 @@ esp_err_t pn532_new_driver_hsu(gpio_num_t uart_rx,
                                int32_t baudrate,
                                pn532_io_handle_t io_handle);
 
-#endif //PN532_DRIVER_HSU_H
+#ifdef __cplusplus
+}
+#endif
+
+#endif // PN532_DRIVER_HSU_H
