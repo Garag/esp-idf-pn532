@@ -428,3 +428,47 @@ esp_err_t pn532_read_ack(pn532_io_handle_t io_handle) {
 
     return ESP_OK;
 }
+
+
+
+esp_err_t pn532_disable_irq(pn532_io_handle_t io_handle) {
+
+    if (io_handle == NULL || io_handle->driver_data == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+#ifdef CONFIG_ENABLE_IRQ_ISR
+    ESP_LOGD(TAG, "Disabling PN532 IRQ handler.");
+    return gpio_isr_handler_remove(io_handle->irq);
+#else
+    return ESP_OK; // No ISR to disable in polling mode
+#endif
+}
+
+esp_err_t pn532_gpio_conf_check_validity(pn532_gpio_conf_t config) {
+  esp_err_t ret = ESP_OK;
+
+  if (config.reset == GPIO_NUM_NC) {
+    ret = ESP_ERR_INVALID_ARG;
+  } 
+#ifdef CONFIG_ENABLE_IRQ_ISR
+  else if (config.irq == GPIO_NUM_NC) {
+    ret = ESP_ERR_INVALID_ARG;
+  }
+#endif
+
+  return ret;
+}
+
+esp_err_t pn532_enable_irq(pn532_io_handle_t io_handle) {
+
+    if (io_handle == NULL || io_handle->driver_data == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+#ifdef CONFIG_ENABLE_IRQ_ISR
+    ESP_LOGD(TAG, "Re-enabling PN532 IRQ handler.");
+    // The ISR service should already be installed from pn532_init()
+    return gpio_isr_handler_add(io_handle->irq, pn532_irq_handler, (void *) io_handle);
+#else
+    return ESP_OK; // No ISR to enable in polling mode
+#endif
+}

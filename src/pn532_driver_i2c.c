@@ -24,6 +24,10 @@ static esp_err_t pn532_read(pn532_io_handle_t io_handle, uint8_t *read_buffer, s
 static esp_err_t pn532_write(pn532_io_handle_t io_handle, const uint8_t *write_buffer, size_t write_size, int xfer_timeout_ms);
 static esp_err_t pn532_is_ready(pn532_io_handle_t io_handle);
 
+static esp_err_t pn532_init_io_ext(pn532_io_handle_t io_handle);
+static void pn532_release_io_ext(pn532_io_handle_t io_handle);
+static void pn532_empty_callback(pn532_io_handle_t io_handle);
+
 esp_err_t pn532_new_driver_i2c(gpio_num_t sda,
                                gpio_num_t scl,
                                gpio_num_t reset,
@@ -65,6 +69,66 @@ esp_err_t pn532_new_driver_i2c(gpio_num_t sda,
     io_handle->IRQQueue = NULL;
 #endif
 
+    return ESP_OK;
+}
+
+
+
+esp_err_t pn532_new_driver_i2c_ext(pn532_io_handle_t io_handle,
+                                   pn532_gpio_conf_t gpio_config,
+                                   i2c_master_bus_handle_t bus_handle) {
+
+    if (io_handle == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    if (bus_handle == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    if (pn532_gpio_conf_check_validity(gpio_config) != ESP_OK) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    io_handle->reset = gpio_config.reset;
+#ifdef CONFIG_ENABLE_IRQ_ISR
+    io_handle->irq = gpio_config.irq;
+#endif
+
+    pn532_i2c_driver_config *dev_config = heap_caps_calloc(1, sizeof(pn532_i2c_driver_config), MALLOC_CAP_DEFAULT);
+    if (dev_config == NULL) {
+        return ESP_ERR_NO_MEM;
+    }
+
+    // no need to initialize the bus since user already provided the bus
+    dev_config->i2c_port_number = I2C_NUM_MAX;
+    dev_config->scl = GPIO_NUM_NC;
+    dev_config->sda = GPIO_NUM_NC;
+    dev_config->bus_created = true;
+    dev_config->i2c_bus_handle = bus_handle;
+
+    io_handle->driver_data = dev_config;
+
+    // these callbacks work the same
+    io_handle->pn532_read = pn532_read;
+    io_handle->pn532_write = pn532_write;
+    io_handle->pn532_init_extra = NULL;
+    io_handle->pn532_is_ready = pn532_is_ready;
+
+    // since bus is provided by user its his responsibilty to manage it
+    io_handle->pn532_release_driver = pn532_empty_callback;
+
+    // basically the same function as previous version, but it only adds new device to bus
+    io_handle->pn532_init_io = pn532_init_io_ext;
+    
+    // basically the same function as previous version, but it only removes new device from bus
+    io_handle->pn532_release_io = pn532_release_io_ext;
+
+
+#ifdef CONFIG_ENABLE_IRQ_ISR
+    io_handle->IRQQueue = NULL;
+#endif
+    
     return ESP_OK;
 }
 
@@ -229,4 +293,44 @@ esp_err_t pn532_write(pn532_io_handle_t io_handle, const uint8_t *write_buffer, 
     driver_config->frame_buffer[write_size + 1] = 0;
 
     return i2c_master_transmit(driver_config->i2c_dev_handle, driver_config->frame_buffer, write_size + 2, xfer_timeout_ms);
+}
+
+esp_err_t pn532_init_io_ext(pn532_io_handle_t io_handle) { 
+    
+    if (io_handle == NULL || io_handle->driver_data == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    pn532_i2c_driver_config *driver_config = (pn532_i2c_driver_config *)io_handle->driver_data;
+
+    i2c_device_config_t dev_cfg;
+    dev_cfg.dev_addr_length = I2C_ADDR_BIT_LEN_7;
+    dev_cfg.device_address = PN532_I2C_RAW_ADDRESS; // 7-bit address without RW flag
+    dev_cfg.scl_speed_hz = 100000;
+    dev_cfg.scl_wait_us = 200000;
+
+    if (i2c_master_bus_add_device(driver_config->i2c_bus_handle, &dev_cfg, &driver_config->i2c_dev_handle) != ESP_OK) {
+        ESP_LOGE(TAG, "i2c_master_bus_add_device() failed");
+        return ESP_FAIL;
+    }
+    
+    return ESP_OK;
+}
+
+void pn532_release_io_ext(pn532_io_handle_t io_handle) {
+    if (io_handle == NULL || io_handle->driver_data == NULL) {
+        return;
+    }
+
+    pn532_i2c_driver_config *driver_config = (pn532_i2c_driver_config *)io_handle->driver_data;
+
+    if (driver_config->i2c_dev_handle != NULL) {
+        ESP_LOGD(TAG, "remove i2c device ...");
+        i2c_master_bus_rm_device(driver_config->i2c_dev_handle);
+        driver_config->i2c_dev_handle = NULL;
+    }
+}
+
+void pn532_empty_callback(pn532_io_handle_t io_handle) {
+  return;
 }
