@@ -91,9 +91,7 @@ esp_err_t pn532_new_driver_i2c_ext(pn532_io_handle_t io_handle,
     }
 
     io_handle->reset = gpio_config.reset;
-#ifdef CONFIG_ENABLE_IRQ_ISR
     io_handle->irq = gpio_config.irq;
-#endif
 
     pn532_i2c_driver_config *dev_config = heap_caps_calloc(1, sizeof(pn532_i2c_driver_config), MALLOC_CAP_DEFAULT);
     if (dev_config == NULL) {

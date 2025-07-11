@@ -450,11 +450,9 @@ esp_err_t pn532_gpio_conf_check_validity(pn532_gpio_conf_t config) {
   if (config.reset == GPIO_NUM_NC) {
     ret = ESP_ERR_INVALID_ARG;
   } 
-#ifdef CONFIG_ENABLE_IRQ_ISR
   else if (config.irq == GPIO_NUM_NC) {
     ret = ESP_ERR_INVALID_ARG;
   }
-#endif
 
   return ret;
 }

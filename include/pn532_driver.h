@@ -55,9 +55,7 @@ struct pn532_io_t {
  */
 typedef struct pn532_gpio_conf_t {
     gpio_num_t reset;
-#ifdef CONFIG_ENABLE_IRQ_ISR
     gpio_num_t irq;
-#endif
 } pn532_gpio_conf_t;
 
 /**
