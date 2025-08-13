@@ -9,7 +9,7 @@ tags:
   - mifare
   - ntag
 dependencies:
-  idf: "^5.2"
+  idf: "^5.1"
 
 files:
   exclude:
