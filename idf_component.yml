@@ -1,4 +1,4 @@
-version: "0.2.0"
+version: "0.2.1"
 description: "Component for communication with NFC cards using a PN532 module"
 url: "https://github.com/garag/esp-idf-pn532"
 repository: "https://github.com/garag/esp-idf-pn532.git"
@@ -9,7 +9,7 @@ tags:
   - mifare
   - ntag
 dependencies:
-  idf: "^5.2"
+  idf: ">=5.2"
 
 files:
   exclude:
