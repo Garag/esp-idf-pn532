@@ -241,6 +241,30 @@ esp_err_t ntag2xx_read_page(pn532_io_handle_t io_handle, uint8_t page, uint8_t *
  */
 esp_err_t ntag2xx_write_page(pn532_io_handle_t io_handle, uint8_t page, const uint8_t *data);
 
+// Mifare Classic functions
+
+/**
+ * Read a 16 byte block from Mifare Classic.
+ * Note: Authentication should be done before calling this for protected blocks.
+ * @param io_handle PN532 io handle
+ * @param block block to read (0-63 for 1K, 0-255 for 4K)
+ * @param buffer buffer to receive data (must be at least 16 bytes)
+ * @param buffer_len length of buffer
+ * @return ESP_OK if successful
+ */
+esp_err_t mifare_classic_read_block(pn532_io_handle_t io_handle, uint8_t block, uint8_t *buffer, size_t buffer_len);
+
+/**
+ * Write a 16 byte block to Mifare Classic.
+ * Note: Authentication should be done before calling this for protected blocks.
+ * @param io_handle PN532 io handle
+ * @param block block to write (0-63 for 1K, 0-255 for 4K)
+ * @param data data to write (must be exactly 16 bytes)
+ * @param data_len length of data (must be 16)
+ * @return ESP_OK if successful
+ */
+esp_err_t mifare_classic_write_block(pn532_io_handle_t io_handle, uint8_t block, const uint8_t *data, size_t data_len);
+
 #ifdef __cplusplus
 }
 #endif

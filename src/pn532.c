@@ -486,3 +486,123 @@ esp_err_t ntag2xx_write_page(pn532_io_handle_t io_handle, uint8_t page, const ui
     return err;
 }
 
+esp_err_t mifare_classic_read_block(pn532_io_handle_t io_handle, uint8_t block, uint8_t *buffer, size_t buffer_len)
+{
+    if (buffer == NULL || buffer_len == 0) {
+#ifdef CONFIG_MIFAREDEBUG
+        ESP_LOGD(TAG, "Invalid buffer for Classic read");
+#endif
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    if (buffer_len < 16) {
+#ifdef CONFIG_MIFAREDEBUG
+        ESP_LOGD(TAG, "Classic read buffer too small: %zu", buffer_len);
+#endif
+        return ESP_ERR_INVALID_SIZE;
+    }
+
+#ifdef CONFIG_MIFAREDEBUG
+    ESP_LOGD(TAG, "Reading Classic block %d", block);
+#endif
+
+    pn532_packetbuffer[0] = PN532_COMMAND_INDATAEXCHANGE;
+    pn532_packetbuffer[1] = 1; /* Card number */
+    pn532_packetbuffer[2] = MIFARE_CMD_READ; /* Classic Read command = 0x30 */
+    pn532_packetbuffer[3] = block;
+
+    esp_err_t err = pn532_send_command_wait_ack(io_handle, pn532_packetbuffer, 4, PN532_WRITE_TIMEOUT);
+    if (err != ESP_OK) {
+#ifdef CONFIG_MIFAREDEBUG
+        ESP_LOGD(TAG, "Failed to queue Classic read");
+#endif
+        return err;
+    }
+
+    err = pn532_wait_ready(io_handle, 100);
+    if (err != ESP_OK) {
+#ifdef CONFIG_MIFAREDEBUG
+        ESP_LOGD(TAG, "Classic read timeout");
+#endif
+        return err;
+    }
+
+    err = pn532_read_data(io_handle, pn532_packetbuffer, 26, PN532_READ_TIMEOUT);
+    if (err != ESP_OK) {
+        return err;
+    }
+
+    uint8_t status = pn532_packetbuffer[7];
+    if ((status & 0x3F) != 0x00) {
+#ifdef CONFIG_MIFAREDEBUG
+        ESP_LOGD(TAG, "Classic read status error: 0x%02x", status);
+#endif
+        return ESP_FAIL;
+    }
+
+    memcpy(buffer, pn532_packetbuffer + 8, 16);
+
+#ifdef CONFIG_MIFAREDEBUG
+    ESP_LOG_BUFFER_HEX_LEVEL(TAG, buffer, 16, ESP_LOG_DEBUG);
+#endif
+
+    return ESP_OK;
+}
+
+esp_err_t mifare_classic_write_block(pn532_io_handle_t io_handle, uint8_t block, const uint8_t *data, size_t data_len)
+{
+    if (data == NULL) {
+#ifdef CONFIG_MIFAREDEBUG
+        ESP_LOGD(TAG, "Invalid data pointer for Classic write");
+#endif
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    if (data_len != 16) {
+#ifdef CONFIG_MIFAREDEBUG
+        ESP_LOGD(TAG, "Classic write requires 16 bytes, got %zu", data_len);
+#endif
+        return ESP_ERR_INVALID_SIZE;
+    }
+
+#ifdef CONFIG_MIFAREDEBUG
+    ESP_LOGD(TAG, "Writing Classic block %d", block);
+#endif
+
+    pn532_packetbuffer[0] = PN532_COMMAND_INDATAEXCHANGE;
+    pn532_packetbuffer[1] = 1; /* Card number */
+    pn532_packetbuffer[2] = MIFARE_CMD_WRITE; /* Classic Write command = 0xA0 */
+    pn532_packetbuffer[3] = block;
+    memcpy(pn532_packetbuffer + 4, data, 16);
+
+    esp_err_t err = pn532_send_command_wait_ack(io_handle, pn532_packetbuffer, 20, PN532_WRITE_TIMEOUT);
+    if (err != ESP_OK) {
+#ifdef CONFIG_MIFAREDEBUG
+        ESP_LOGD(TAG, "Failed to queue Classic write");
+#endif
+        return err;
+    }
+
+    err = pn532_wait_ready(io_handle, 100);
+    if (err != ESP_OK) {
+#ifdef CONFIG_MIFAREDEBUG
+        ESP_LOGD(TAG, "Classic write timeout");
+#endif
+        return err;
+    }
+
+    err = pn532_read_data(io_handle, pn532_packetbuffer, 26, PN532_READ_TIMEOUT);
+    if (err != ESP_OK) {
+        return err;
+    }
+
+    uint8_t status = pn532_packetbuffer[7];
+    if ((status & 0x3F) != 0x00) {
+#ifdef CONFIG_MIFAREDEBUG
+        ESP_LOGD(TAG, "Classic write status error: 0x%02x", status);
+#endif
+        return ESP_FAIL;
+    }
+
+    return ESP_OK;
+}
