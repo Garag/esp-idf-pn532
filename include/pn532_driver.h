@@ -50,6 +50,15 @@ struct pn532_io_t {
 };
 
 /**
+ * @brief Structure containing GPIOs that are common among all drivers (SPI, I2C, UART)
+ * 
+ */
+typedef struct pn532_gpio_conf_t {
+    gpio_num_t reset;
+    gpio_num_t irq;
+} pn532_gpio_conf_t;
+
+/**
  * Initialize PN532 RFID module
  * @param io_handle PN532 io handle
  * @return ESP_OK if successful
@@ -125,6 +134,39 @@ esp_err_t pn532_send_command_wait_ack(pn532_io_handle_t io_handle, const uint8_t
  * @return ESP_OK if successful
  */
 esp_err_t pn532_read_ack(pn532_io_handle_t io_handle);
+
+
+/**
+ * @brief Installs IRQ service.
+ * @details Might be used during initialization or after
+ *          disabling it so that the same interrupt pin
+ *          could be used for waking the processor after
+ *          it eneters low power mode.
+ * 
+ * @param io_handle PN532 io handle
+ * @retval ESP_OK when operation successful
+ */
+esp_err_t pn532_enable_irq(pn532_io_handle_t io_handle);
+
+/**
+ * @brief Disables IRQ service.
+ * @details Might be used before entering deep sleep mode,
+ *          so that the same interrupt pin might wake the
+ *          processor.
+ * 
+ * @param io_handle PN532 io handle
+ * @retval ESP_OK when operation successful
+ */
+esp_err_t pn532_disable_irq(pn532_io_handle_t io_handle);
+
+/**
+ * @brief Checks if configuration is valid.
+ * 
+ * @param config Common pin configuration
+ * @retval ESP_OK if all data is correct
+ * @retval ESP_ERR_INVALID_ARG if any field is incorrect
+ */
+esp_err_t pn532_gpio_conf_check_validity(pn532_gpio_conf_t config);
 
 #ifdef __cplusplus
 }
