@@ -18,7 +18,9 @@ extern "C"
                                    i2c_port_num_t i2c_port_number,
                                    pn532_io_handle_t io_handle);
 
-#ifdef __cplusplus
+    void pn532_release_driver(pn532_io_handle_t io_handle);
+
+    #ifdef __cplusplus
 }
 #endif
 
